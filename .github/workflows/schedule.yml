@@ -3,6 +3,7 @@ on:
   workflow_dispatch: # 允许手动触发
   schedule: # 定时任务
     - cron: '29 0 * * *' # 修改到8.29执行 
+    - cron: '29 12 * * *' # 备用时间 
 jobs:
   run-main:
     timeout-minutes: 20
