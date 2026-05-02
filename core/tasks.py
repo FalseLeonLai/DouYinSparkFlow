@@ -133,11 +133,11 @@ def scroll_and_select_user(page, username, targets):
                     element.click()
                     if matchMode == "short_id":
                         logger.debug(
-                            f"账号 {username} 选中目标好友 {targetName} 准备开始交互"
+                            f"账号 {username} 选中目标好友 {targetName} (ShortId: {targetSymbol}) 准备开始交互"
                         )
                     else:
                         logger.debug(
-                            f"账号 {username} 选中目标好友 {targetName} (ShortId: {targetSymbol}) 准备开始交互"
+                            f"账号 {username} 选中目标好友 {targetName} 准备开始交互"
                         )
                     yield targetName
                     
@@ -220,56 +220,57 @@ def do_user_task(browser, username, cookies, targets):
         context.set_default_timeout(config["browserTimeout"])  # 设置所有操作的默认超时时间为 120 秒
 
         page = context.new_page()
-        
-        if matchMode == "short_id":  # 使用抖音号进行匹配
-            page.on("response", handle_response)
-        
-        # 打开抖音创作者中心
-        retry_operation(
-            "打开抖音创作者中心",
-            page.goto,
-            retries=config["taskRetryTimes"],
-            delay=5,
-            url="https://creator.douyin.com/",
-        )
-        # 注入 Cookie
-        context.add_cookies(cookies)
 
-        # 导航到消息页面
-        retry_operation(
-            "导航到消息页面",
-            page.goto,
-            retries=config["taskRetryTimes"],
-            delay=5,
-            url="https://creator.douyin.com/creator-micro/data/following/chat",
-        )
+        try:
+            if matchMode == "short_id":  # 使用抖音号进行匹配
+                page.on("response", handle_response)
 
-        logger.debug(f"账号 {username} 开始发送消息")
-        # 滚动并选择用户
-        for username in scroll_and_select_user(page, username, targets):
-            logger.debug(f"账号 {username} 已选中好友 {username} 发送消息")
-            # 等待聊天输入框元素加载完成，使用更稳定的属性选择器
-            chat_input_selector = "xpath=//div[contains(@class, 'chat-input-')]"
-            page.wait_for_selector(chat_input_selector, timeout=config["browserTimeout"])
-            chat_input = page.locator(chat_input_selector)
-
-            # 在 chat-input-dccKiL 中输入内容
-            message = build_message()
-            for line in message.split("\\n"):
-                chat_input.type(line)  # 输入每一行
-                # 如果不是最后一行，模拟 Shift+Enter 插入换行
-                if line != message.split("\\n")[-1]:
-                    chat_input.press("Shift+Enter")  # 模拟 Shift+Enter 插入换行
-
-            logger.debug(
-                f"账号 {username} 准备发送消息给好友 {username}：\n\t{message}"
+            # 打开抖音创作者中心
+            retry_operation(
+                "打开抖音创作者中心",
+                page.goto,
+                retries=config["taskRetryTimes"],
+                delay=5,
+                url="https://creator.douyin.com/",
             )
-            logger.debug(f"账号 {username} 给好友 {username} 发送消息完成")
-            # 模拟按下回车键发送消息
-            chat_input.press("Enter")
-            time.sleep(2)  # 发送完等待一会儿
+            # 注入 Cookie
+            context.add_cookies(cookies)
 
-        context.close()  # 任务完成后关闭上下文
+            # 导航到消息页面
+            retry_operation(
+                "导航到消息页面",
+                page.goto,
+                retries=config["taskRetryTimes"],
+                delay=5,
+                url="https://creator.douyin.com/creator-micro/data/following/chat",
+            )
+
+            logger.debug(f"账号 {username} 开始发送消息")
+            # 滚动并选择用户
+            for target_name in scroll_and_select_user(page, username, targets):
+                logger.debug(f"账号 {username} 已选中好友 {target_name} 发送消息")
+                # 等待聊天输入框元素加载完成，使用更稳定的属性选择器
+                chat_input_selector = "xpath=//div[contains(@class, 'chat-input-')]"
+                page.wait_for_selector(chat_input_selector, timeout=config["browserTimeout"])
+                chat_input = page.locator(chat_input_selector)
+
+                # 在 chat-input-dccKiL 中输入内容
+                message = build_message()
+                for line in message.split("\\n"):
+                    chat_input.type(line)  # 输入每一行
+                    # 如果不是最后一行，模拟 Shift+Enter 插入换行
+                    if line != message.split("\\n")[-1]:
+                        chat_input.press("Shift+Enter")  # 模拟 Shift+Enter 插入换行
+
+                logger.debug(
+                    f"账号 {username} 准备发送消息给好友 {target_name}：\n\t{message}"
+                )
+                logger.debug(f"账号 {username} 给好友 {target_name} 发送消息完成")
+                # 模拟按下回车键发送消息
+                chat_input.press("Enter")
+                time.sleep(2)  # 发送完等待一会儿
+        finally:
+            context.close()  # 任务完成后关闭上下文
 
 
 def runTasks():

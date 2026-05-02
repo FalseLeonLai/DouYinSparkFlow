@@ -5,7 +5,6 @@ core/msg_builder.py
 
 from utils.config import get_config
 from utils.hitokoto import request_hitokoto
-from datetime import date
 
 
 def build_message_with_openai() -> str:
@@ -37,8 +36,6 @@ def build_message_with_openai() -> str:
         ],
         extra_body={"reasoning_split": True},
     )
-
-    print(response)
 
     return response.choices[0].message.content.strip()
 

@@ -1,5 +1,8 @@
+import logging
 import requests
 from utils.config import get_config
+
+logger = logging.getLogger(__name__)
 
 hitokotoApi = "https://v1.hitokoto.cn/"
 
@@ -45,4 +48,5 @@ def request_hitokoto():
             theFromWho = "未知作者"
         return f"{data['hitokoto']} —— {theFrom} ({theFromWho})"
     except Exception as e:
+        logger.warning(f"获取一言内容失败: {e}")
         return "[error] 无法获取一言内容"

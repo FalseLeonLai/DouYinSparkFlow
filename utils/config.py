@@ -59,10 +59,11 @@ def get_config():
     return config
 
 def sanitize_cookies(cookies):
+    sanitized = []
     for cookie in cookies:
-        if "sameSite" in cookie:
-            cookie.pop("sameSite")  # 移除 sameSite 字段，Playwright 可能不支持该字段
-    return cookies
+        cookie = {k: v for k, v in cookie.items() if k != "sameSite"}
+        sanitized.append(cookie)
+    return sanitized
 
 
 def get_userData():
