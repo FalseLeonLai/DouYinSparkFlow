@@ -1,0 +1,54 @@
+name: Notify Test
+
+# 仅手动触发，用来验证 NOTIFY_TYPE / FEISHU_WEBHOOK_URL / WECOM_WEBHOOK_URL 配置是否正确。
+# 不跑 playwright，不读 cookie，30 秒内出结果。
+on:
+  workflow_dispatch:
+    inputs:
+      message:
+        description: '自定义测试消息正文（可选）'
+        required: false
+        default: '这是一条来自 GitHub Actions 的续火花通知联调测试。'
+
+jobs:
+  notify-test:
+    runs-on: ubuntu-latest
+    environment: user-data
+    timeout-minutes: 5
+    steps:
+    - uses: actions/checkout@v4
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.11'
+    - name: Install minimal deps
+      run: pip install requests
+    - name: Export Github Environment Variables and Secrets to JSON
+      env:
+        VARS_JSON: ${{ toJson(vars) }}
+        SECRETS_JSON: ${{ toJson(secrets) }}
+      run: python utils/export_github_env.py
+    - name: Show notify config (without leaking secrets)
+      run: |
+        python - <<'PY'
+        import os
+        notify_type = os.getenv("NOTIFY_TYPE", "")
+        feishu = os.getenv("FEISHU_WEBHOOK_URL", "")
+        wecom = os.getenv("WECOM_WEBHOOK_URL", "")
+        print(f"NOTIFY_TYPE        = {notify_type!r}")
+        print(f"FEISHU_WEBHOOK_URL = {'已配置 (长度 ' + str(len(feishu)) + ')' if feishu else '未配置'}")
+        print(f"WECOM_WEBHOOK_URL  = {'已配置 (长度 ' + str(len(wecom)) + ')' if wecom else '未配置'}")
+        if not notify_type:
+            raise SystemExit("❌ NOTIFY_TYPE 未配置，去 Settings → Variables 添加")
+        PY
+    - name: Send test notification
+      env:
+        TEST_MESSAGE: ${{ github.event.inputs.message }}
+      run: |
+        python - <<'PY'
+        import os
+        from utils.notify import notify
+        msg = os.getenv("TEST_MESSAGE", "")
+        notify("续火花 通知联调测试", msg, success=True)
+        print("✅ 通知发送流程结束。如群里没收到消息，看上方日志确认渠道返回的状态。")
+        PY

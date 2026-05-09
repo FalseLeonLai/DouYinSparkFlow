@@ -31,6 +31,24 @@ jobs:
       run: python utils/export_github_env.py
     - name: Run DouYin Spark Flow
       run: python main.py
+    - name: Notify on workflow failure
+      if: failure()
+      env:
+        NOTIFY_TYPE: ${{ vars.NOTIFY_TYPE }}
+        FEISHU_WEBHOOK_URL: ${{ secrets.FEISHU_WEBHOOK_URL }}
+        WECOM_WEBHOOK_URL: ${{ secrets.WECOM_WEBHOOK_URL }}
+        RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+      run: |
+        python - <<'PY'
+        import os
+        from utils.notify import notify
+        run_url = os.getenv("RUN_URL", "")
+        notify(
+            "续火花 Workflow 失败",
+            f"GitHub Actions 任务执行失败，可能在依赖安装、浏览器安装或脚本启动阶段出错。\n\n[查看日志]({run_url})",
+            success=False,
+        )
+        PY
     - uses: actions/upload-artifact@v4
       if: ${{ !cancelled() }}
       with:

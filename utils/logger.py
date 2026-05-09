@@ -20,16 +20,15 @@ def setup_logger(name="app", level="Info"):
     :param level: 日志级别
     :return: 配置好的日志记录器
     """
-    if level == "Debug":
-        level = logging.DEBUG
-    elif level == "Info":
-        level = logging.INFO
-    elif level == "Warning":
-        level = logging.WARNING
-    elif level == "Error":
-        level = logging.ERROR
-    else:
-        level = logging.INFO
+    if isinstance(level, str):
+        level_map = {
+            "DEBUG": logging.DEBUG,
+            "INFO": logging.INFO,
+            "WARNING": logging.WARNING,
+            "ERROR": logging.ERROR,
+            "CRITICAL": logging.CRITICAL,
+        }
+        level = level_map.get(level.upper(), logging.INFO)
     
     logger = logging.getLogger(name)
     logger.setLevel(level)

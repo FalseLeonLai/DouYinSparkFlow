@@ -1,0 +1,20 @@
+name = "douyin-spark-flow-trigger"
+main = "worker.js"
+compatibility_date = "2024-12-01"
+
+# Cloudflare 自家 cron，规避 GitHub Actions schedule 的延迟。
+# 比 GitHub Actions schedule 准时得多（一般 < 1 分钟）。
+# 可改成你想要的时段。注意全部为 UTC。
+[triggers]
+crons = ["29 0 * * *", "29 12 * * *"]
+
+# 公开变量（可在 dashboard 修改）
+[vars]
+GH_OWNER = "FalseLeonLai"
+GH_REPO = "DouYinSparkFlow"
+GH_WORKFLOW = "schedule.yml"
+GH_REF = "main"
+
+# Secrets 不要写在这里。部署时分别执行：
+#   wrangler secret put GH_TOKEN
+#   wrangler secret put MANUAL_TRIGGER_TOKEN   # 可选
