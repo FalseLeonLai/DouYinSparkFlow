@@ -39,7 +39,7 @@ def get_browser():
 
     try:
         # 启动浏览器
-        playwright = sync_playwright().start() 
+        playwright = sync_playwright().start()
         browser = playwright.chromium.launch(headless=headless)
         return playwright, browser
     except Exception as e:
@@ -50,3 +50,4 @@ def get_browser():
             sys.exit(1)
         else:
             traceback.print_exc()
+            raise
