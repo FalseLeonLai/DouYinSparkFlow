@@ -217,6 +217,7 @@ def scroll_and_select_user(page, username, targets):
 def do_user_task(browser, username, cookies, targets):
         global userIDDict
         userIDDict = {}  # 每个账号独立维护映射，避免跨账号数据串扰
+        sent = []  # 本账号成功发送的好友列表
         context = browser.new_context()  # 每个任务使用独立的上下文
         context.set_default_navigation_timeout(config["browserTimeout"])  # 设置导航超时时间为 120 秒
         context.set_default_timeout(config["browserTimeout"])  # 设置所有操作的默认超时时间为 120 秒
@@ -270,13 +271,16 @@ def do_user_task(browser, username, cookies, targets):
             logger.debug(f"账号 {username} 给好友 {target_name} 发送消息完成")
             # 模拟按下回车键发送消息
             chat_input.press("Enter")
+            sent.append(target_name)
             time.sleep(2)  # 发送完等待一会儿
 
         context.close()  # 任务完成后关闭上下文
+        return sent
 
 
 def runTasks():
     playwright, browser = get_browser()
+    results = []  # [(username, sent_list, error_or_none), ...]
     try:
         # 检查是否启用多任务和任务数量
         # 创建信号量以限制并发任务数量
@@ -293,14 +297,21 @@ def runTasks():
             complates[user["unique_id"]] = []  # 初始化该用户的已完成列表
             username = user.get("username", "未知用户")
             logger.info(f"开始处理账号 {username}")
-            # 创建任务
-            do_user_task(browser, username, cookies, targets)
-            logger.info(f"账号 {username} 任务完成")
+            try:
+                sent = do_user_task(browser, username, cookies, targets) or []
+                complates[user["unique_id"]] = sent
+                results.append((username, sent, None))
+                logger.info(f"账号 {username} 任务完成，发送 {len(sent)}/{len(targets)} 个好友")
+            except Exception as e:
+                logger.error(f"账号 {username} 任务异常：{e}")
+                results.append((username, [], str(e)))
     finally:
         # 关闭浏览器实例
         browser.close()
-        
+
         playwright.stop()
+
+    return results
 
         
 
